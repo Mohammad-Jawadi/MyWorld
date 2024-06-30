@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyWorld</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .tab {
+            display: none;
+        }
+        .tab.active {
+            display: block;
+        }
+        .nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .nav button {
+            padding: 10px;
+            cursor: pointer;
+        }
+        #imageDisplay img {
+            width: 100px;
+            height: 100px;
+            margin: 10px;
+        }
+        #countrySelect {
+            display: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .country-tab-content {
+            display: none;
+        }
+        .country-tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>MyWorld</h1>
+    <div class="nav">
+        <input type="text" id="countrySearch" placeholder="Search for a country" onfocus="showCountryOptions()">
+        <select id="countrySelect" size="10"></select>
+    </div>
+    <div id="countryTabs" class="nav"></div>
+    <div id="countryContent"></div>
+    <script>
+        const countries = ["Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Congo-Brazzaville)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia (Czech Republic)", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini (fmr. Swaziland)", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar (formerly Burma)", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States of America", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"];
+
+        const countrySelect = document.getElementById('countrySelect');
+        const countrySearch = document.getElementById('countrySearch');
+
+        const imageStore = {};
+        const recommendationStore = {};
+
+        countries.forEach(country => {
+            const option = document.createElement('option');
+            option.value = country;
+            option.textContent = country;
+            countrySelect.appendChild(option);
+        });
+
+        countrySearch.addEventListener('input', function() {
+            const filter = countrySearch.value.toLowerCase();
+            Array.from(countrySelect.options).forEach(option => {
+                const country = option.value.toLowerCase();
+                option.style.display = country.includes(filter) ? 'block' : 'none';
+            });
+            countrySelect.style.display = 'block';
+        });
+
+        countrySelect.addEventListener('change', function() {
+            const selectedCountry = this.value;
+            countrySearch.value = '';
+            countrySelect.style.display = 'none';
+            if (!document.getElementById(`tab-${selectedCountry}`)) {
+                addCountryTab(selectedCountry);
+            }
+        });
+
+        function showCountryOptions() {
+            countrySelect.style.display = 'block';
+        }
+
+        function addCountryTab(country) {
+            const tab = document.createElement('button');
+            tab.id = `tab-${country}`;
+            tab.textContent = country;
+            tab.onclick = function() {
+                showCountryContent(country);
+            };
+            document.getElementById('countryTabs').appendChild(tab);
+
+            const content = document.createElement('div');
+            content.id = `content-${country}`;
+            content.classList.add('country-tab-content');
+
+            const uploadSection = document.createElement('div');
+            const uploadHeader = document.createElement('h2');
+            uploadHeader.textContent = 'Upload Pictures';
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = true;
+            fileInput.onchange = function() {
+                uploadPictures(country, fileInput.files);
+            };
+            const imageDisplay = document.createElement('div');
+            imageDisplay.id = `imageDisplay-${country}`;
+            uploadSection.appendChild(uploadHeader);
+            uploadSection.appendChild(fileInput);
+            uploadSection.appendChild(imageDisplay);
+
+            const recommendationSection = document.createElement('div');
+            const recommendationHeader = document.createElement('h2');
+            recommendationHeader.textContent = 'Recommendations';
+            const recommendationText = document.createElement('textarea');
+            recommendationText.rows = 5;
+            recommendationText.cols = 30;
+            const recommendationButton = document.createElement('button');
+            recommendationButton.textContent = 'Submit';
+            recommendationButton.onclick = function() {
+                submitRecommendation(country, recommendationText.value);
+            };
+            const recommendationDisplay = document.createElement('div');
+            recommendationDisplay.id = `recommendationDisplay-${country}`;
+            recommendationSection.appendChild(recommendationHeader);
+            recommendationSection.appendChild(recommendationText);
+            recommendationSection.appendChild(recommendationButton);
+            recommendationSection.appendChild(recommendationDisplay);
+
+            content.appendChild(uploadSection);
+            content.appendChild(recommendationSection);
+
+            document.getElementById('countryContent').appendChild(content);
+        }
+
+        function showCountryContent(country) {
+            document.querySelectorAll('.country-tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`content-${country}`).classList.add('active');
+            displayImages(country);
+            displayRecommendations(country);
+        }
+
+        function uploadPictures(country, files) {
+            if (!imageStore[country]) {
+                imageStore[country] = [];
+            }
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imageStore[country].push(e.target.result);
+                    displayImages(country);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function displayImages(country) {
+            const imageDisplay = document.getElementById(`imageDisplay-${country}`);
+            imageDisplay.innerHTML = '';
+            if (imageStore[country]) {
+                imageStore[country].forEach(imageSrc => {
+                    const img = document.createElement('img');
+                    img.src = imageSrc;
+                    imageDisplay.appendChild(img);
+                });
+            }
+        }
+
+        function submitRecommendation(country, text) {
+            if (!recommendationStore[country]) {
+                recommendationStore[country] = [];
+            }
+            recommendationStore[country].push(text);
+            document.getElementById(`recommendationText-${country}`).value = '';
+            displayRecommendations(country);
+        }
+
+        function displayRecommendations(country) {
+            const display = document.getElementById(`recommendationDisplay-${country}`);
+            display.innerHTML = '';
+            if (recommendationStore[country]) {
+                recommendationStore[country].forEach(recommendation => {
+                    const p = document.createElement('p');
+                    p.innerText = recommendation;
+                    display.appendChild(p);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
